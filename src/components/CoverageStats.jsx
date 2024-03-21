@@ -8,75 +8,47 @@ import {
 const CoverageStats = ({ data, rawData }) => {
     const newData = data.filter(
         (item) =>
-            item.HTS !== null &&
-            item.PT !== null &&
-            item.ITK !== null &&
-            item.HTS !== "null" &&
-            item.PT !== "null" &&
+            item.HTS !== "null" ||
+            item.PT !== "null" ||
             item.ITK !== "null"
     );
 
-    const nullData = rawData.filter((item) => {
-        for (const key in item) {
-            if (item.hasOwnProperty(key) && item[key] === "null") {
-                return true;
-            }
-        }
-        return false;
-    });
-
-    const filteredNullData = [...nullData];
-
-    // For HS6_PT_ITK
-    const { filteredData: filteredClusterIdData } =
-        getPropertyCountsAndCoverageData(newData, "HS6_PT_ITK");
-
-    const ClusterIdTop5 = getTop5PropertySum(newData, "HS6_PT_ITK");
 
     // For HS6_PT
     const { filteredData: filteredHTSPTData } =
-        getPropertyCountsAndCoverageData(filteredClusterIdData, "HS6_PT");
-
-    const HTSPTTop5 = getTop5PropertySum(filteredClusterIdData, "HS6_PT");
+        getPropertyCountsAndCoverageData(data, "HS6_PT");
+    const HTSPTTop5 = getTop5PropertySum(data, "HS6_PT");
 
     // For HS6_ITK
     const { filteredData: filteredHTSITKData } =
         getPropertyCountsAndCoverageData(filteredHTSPTData, "HS6_ITK");
-
     const HTSITKTop5 = getTop5PropertySum(filteredHTSPTData, "HS6_ITK");
-
-    const filteredHTSITKData_Null = [
-        ...filteredHTSITKData,
-        ...filteredNullData,
-    ];
-    const htsNonNullData = filteredHTSITKData_Null.filter(
-        (item) => item.HTS !== "null"
-    );
 
     // For HTS
     const { filteredData: filteredHTSData } = getPropertyCountsAndCoverageData(
-        filteredHTSITKData_Null,
+        filteredHTSITKData,
         "HTS"
     );
-
-    const HTSTop5 = getTop5PropertySum(htsNonNullData, "HTS");
+    const HTSTop5 = getTop5PropertySum(filteredHTSITKData, "HTS");
 
     // For PT
     const { filteredData: filteredPTData } = getPropertyCountsAndCoverageData(
         filteredHTSData,
         "PT"
     );
-    const ptNonNullData = filteredHTSData.filter((item) => item.PT !== "null");
-    const PTTop5 = getTop5PropertySum(ptNonNullData, "PT");
+    const PTTop5 = getTop5PropertySum(filteredHTSData, "PT");
 
     // For ITK
     const { filteredData: filteredITKData } = getPropertyCountsAndCoverageData(
         filteredPTData,
         "ITK"
     );
-    const itkNonNullData = filteredPTData.filter((item) => item.ITK !== "null");
+    const ITKTop5 = getTop5PropertySum(filteredPTData, "ITK");
 
-    const ITKTop5 = getTop5PropertySum(itkNonNullData, "ITK");
+    // For HS6_PT_ITK
+    const { filteredData: filteredHTSPTITKData } =
+        getPropertyCountsAndCoverageData(filteredITKData, "HS6_PT_ITK");
+    const HTSPTITKTop5 = getTop5PropertySum(filteredITKData, "HS6_PT_ITK");
 
     const [efficiencyList, setEfficiencyList] = useState([]);
     useEffect(() => {
@@ -119,14 +91,6 @@ const CoverageStats = ({ data, rawData }) => {
                 </thead>
                 <tbody>
                     <tr>
-                        <td>HS6_PT_ITK</td>
-                        <td>{ClusterIdTop5}</td>
-                        <td>
-                            {((ClusterIdTop5 / data.length) * 100).toFixed(2)}
-                        </td>
-                        <td>{priorities["HS6_CI"]}</td>
-                    </tr>
-                    <tr>
                         <td>HS6_PT</td>
                         <td>{HTSPTTop5}</td>
                         <td>{((HTSPTTop5 / data.length) * 100).toFixed(2)}</td>
@@ -155,6 +119,14 @@ const CoverageStats = ({ data, rawData }) => {
                         <td>{ITKTop5}</td>
                         <td>{((ITKTop5 / data.length) * 100).toFixed(2)}</td>
                         <td></td>
+                    </tr>
+                    <tr>
+                        <td>HS6_PT_ITK</td>
+                        <td>{HTSPTITKTop5}</td>
+                        <td>
+                            {((HTSPTITKTop5 / data.length) * 100).toFixed(2)}
+                        </td>
+                        <td>{priorities["HS6_CI"]}</td>
                     </tr>
                 </tbody>
             </Table>

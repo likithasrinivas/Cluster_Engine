@@ -28,6 +28,7 @@ function Coverage() {
     }, [data]);
 
     const handleFileUpload = (event) => {
+        localStorage.removeItem("Coverage_Data");
         const file = event.target.files[0];
         Papa.parse(file, {
             complete: (result) => {
@@ -45,13 +46,12 @@ function Coverage() {
 
     const newData = data.filter(
         (item) =>
-            item.HTS !== null &&
-            item.PT !== null &&
-            item.ITK !== null &&
-            item.HTS !== "null" &&
-            item.PT !== "null" &&
+            item.HTS !== "null" ||
+            item.PT !== "null" ||
             item.ITK !== "null"
     );
+
+    console.log("aa", newData.length);
 
     const combinedData = newData
         .filter((item) => item.ASIN !== "")
@@ -176,9 +176,7 @@ function Coverage() {
                                             <option value="">
                                                 Select the Header
                                             </option>
-                                            <option value="HS6_PT_ITK">
-                                                HS6_PT_ITK
-                                            </option>
+
                                             <option value="HS6_PT">
                                                 HS6_PT
                                             </option>
@@ -188,6 +186,9 @@ function Coverage() {
                                             <option value="HS6">HS6</option>
                                             <option value="PT">PT</option>
                                             <option value="ITK">ITK</option>
+                                            <option value="HS6_PT_ITK">
+                                                HS6_PT_ITK
+                                            </option>
                                         </FormControl>
                                     </Form.Group>
                                 </Form>

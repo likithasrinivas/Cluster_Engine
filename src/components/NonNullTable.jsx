@@ -12,59 +12,69 @@ const NonNullTable = ({ data }) => {
             HS6_ITK: item.ITK + "-" + item.HTS,
         }));
 
-    const hs6PtItkCount = calculateNonNullCount(combinedData, "HS6_PT_ITK");
-    const hs6PtCount = calculateNonNullCount(combinedData, "HS6_PT");
-    const hs6ItkCount = calculateNonNullCount(combinedData, "HS6_ITK");
-    const hs6Count = calculateNonNullCount(combinedData, "HTS");
-    const ptCount = calculateNonNullCount(combinedData, "PT");
-    const itkCount = calculateNonNullCount(combinedData, "ITK");
+    const hs6PtItkCount = combinedData.filter(
+        (item) =>
+            item.HTS !== "null" && item.PT !== "null" && item.ITK !== "null"
+    ).length;
+    const hs6PtCount = combinedData.filter(
+        (item) => item.HTS !== "null" && item.PT !== "null"
+    ).length;
+    const hs6ItkCount = combinedData.filter(
+        (item) => item.HTS !== "null" && item.ITK !== "null"
+    ).length;
+    const hs6Count = combinedData.filter((item) => item.HTS !== "null").length;
+    const ptCount = combinedData.filter((item) => item.PT !== "null").length;
+    const itkCount = combinedData.filter((item) => item.ITK !== "null").length;
+
+    const nonNullList = [
+        hs6PtItkCount,
+        hs6PtCount,
+        hs6ItkCount,
+        hs6Count,
+        ptCount,
+        itkCount,
+    ];
+
+    // Sort the nonNullList in descending order
+    const sortedList = nonNullList.slice().sort((a, b) => b - a);
+
+    // Create a mapping of counts to their ranks
+    const rankMap = {};
+    sortedList.forEach((count, index) => {
+        rankMap[count] = index + 1;
+    });
+
+    const coveragePercentage = (count) =>
+        ((count / data.length) * 100).toFixed(2);
 
     return (
         <>
-            <h4>Coverage Non Null Count</h4>
+            <h4>Non null count</h4>
             <Table bordered hover>
                 <thead>
                     <tr>
-                        <th>Cluster type</th>
+                        <th>Attributes</th>
                         <th>Count</th>
                         <th>Coverage (in %)</th>
+                        <th>Rank</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>HS6_PT_ITK</td>
-                        <td>{hs6PtItkCount}</td>
-                        <td>
-                            {((hs6PtItkCount / data.length) * 100).toFixed(2)}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>HS6_PT</td>
-                        <td>{hs6PtCount}</td>
-                        <td>{((hs6PtCount / data.length) * 100).toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>HS6_ITK</td>
-                        <td>{hs6ItkCount}</td>
-                        <td>
-                            {((hs6ItkCount / data.length) * 100).toFixed(2)}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>HS6</td>
-                        <td>{hs6Count}</td>
-                        <td>{((hs6Count / data.length) * 100).toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>PT</td>
-                        <td>{ptCount}</td>
-                        <td>{((ptCount / data.length) * 100).toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>ITK</td>
-                        <td>{itkCount}</td>
-                        <td>{((itkCount / data.length) * 100).toFixed(2)}</td>
-                    </tr>
+                    {[
+                        { attribute: "HS6_PT_ITK", count: hs6PtItkCount },
+                        { attribute: "HS6_PT", count: hs6PtCount },
+                        { attribute: "HS6_ITK", count: hs6ItkCount },
+                        { attribute: "HS6", count: hs6Count },
+                        { attribute: "PT", count: ptCount },
+                        { attribute: "ITK", count: itkCount },
+                    ].map(({ attribute, count }) => (
+                        <tr key={attribute}>
+                            <td>{attribute}</td>
+                            <td>{count}</td>
+                            <td>{coveragePercentage(count)}</td>
+                            <td>{rankMap[count]}</td>
+                        </tr>
+                    ))}
                 </tbody>
             </Table>
         </>

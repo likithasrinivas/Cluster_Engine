@@ -32,6 +32,7 @@ function EfficiencyBoard() {
     }, [data]);
 
     const handleFileUpload = (event) => {
+        localStorage.removeItem("Coverage_Data");
         const file = event.target.files[0];
         Papa.parse(file, {
             complete: (result) => {
@@ -51,15 +52,31 @@ function EfficiencyBoard() {
         ? data.filter((item) => item.countrycode === selectedMP)
         : data;
 
-    const customData = filteredData.map((item) => ({
-        ...item,
-        clusterid_classification: item.clusterid + item.classification,
-        PT_classification: item.PT + item.classification,
-        ITK_classification: item.ITK + item.classification,
-        PT_ITK_classification: item.PT + item.ITK + item.classification,
-        HS6_classification: item.HS6 + item.classification,
-    }));
-    
+    const customData = filteredData.map((item) => {
+        const newItem = { ...item };
+
+        // Check if properties exist before computing
+        if (item.clusterid && item.clusterid !=="null" && item.classification) {
+            newItem.clusterid_classification =
+                item.clusterid + item.classification;
+        }
+        if (item.PT && item.PT !=="null" && item.classification) {
+            newItem.PT_classification = item.PT + item.classification;
+        }
+        if (item.ITK && item.ITK !=="null" && item.classification) {
+            newItem.ITK_classification = item.ITK + item.classification;
+        }
+        if (item.PT && item.ITK && item.PT !=="null" && item.ITK !=="null" && item.classification) {
+            newItem.PT_ITK_classification =
+                item.PT + item.ITK + item.classification;
+        }
+        if (item.HS6 && item.HS6 !=="null" && item.classification) {
+            newItem.HS6_classification = item.HS6 + item.classification;
+        }
+
+        return newItem;
+    });
+
     const combinedData = selectedMP
         ? customData.filter((item) => item.countrycode === selectedMP)
         : [];
@@ -67,6 +84,16 @@ function EfficiencyBoard() {
     const handleHeaderSelect = (event) => {
         setSelectedHeader(event.target.value);
     };
+
+    const excludedProperties = [
+        "asin",
+        "classification",
+        "countrycode",
+        "clusterid",
+        "HS6",
+        "ITK",
+        "PT",
+    ];
 
     return (
         <Container fluid>
@@ -134,21 +161,25 @@ function EfficiencyBoard() {
                                         <option value="">
                                             Select the Header
                                         </option>
-                                        <option value="clusterid_classification">
-                                            ClusterId_Classification
-                                        </option>
-                                        <option value="PT_classification">
-                                            PT_Classification
-                                        </option>
-                                        <option value="ITK_classification">
-                                            ITK_Classification
-                                        </option>
-                                        <option value="PT_ITK_classification">
-                                            PT_ITK_Classification
-                                        </option>
-                                        <option value="HS6_classification">
-                                            HS6_Classification
-                                        </option>
+                                        {Object.keys(combinedData[0]).map(
+                                            (property) => {
+                                                if (
+                                                    !excludedProperties.includes(
+                                                        property
+                                                    )
+                                                ) {
+                                                    return (
+                                                        <option
+                                                            key={property}
+                                                            value={property}
+                                                        >
+                                                            {property}
+                                                        </option>
+                                                    );
+                                                }
+                                                return null;
+                                            }
+                                        )}
                                     </FormControl>
                                 </Form.Group>
                             </Form>

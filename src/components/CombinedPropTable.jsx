@@ -10,70 +10,39 @@ import {
 const CombinedPropTable = ({ data, header, rawData }) => {
     const newData = data.filter(
         (item) =>
-            item.HTS !== null &&
-            item.PT !== null &&
-            item.ITK !== null &&
-            item.HTS !== "null" &&
-            item.PT !== "null" &&
+            item.HTS !== "null" ||
+            item.PT !== "null" ||
             item.ITK !== "null"
     );
 
-    const nullData = rawData.filter((item) => {
-        for (const key in item) {
-            if (item.hasOwnProperty(key) && item[key] === "null") {
-                return true;
-            }
-        }
-        return false;
-    });
-
-    const filteredNullData = [...nullData];
-
-    // For ClusterId
-    const {
-        propertyCounts: clusterIdCounts,
-        filteredData: filteredClusterIdData,
-    } = getPropertyCountsAndCoverageData(data, "HS6_PT_ITK");
-
     // For HTS_PT
     const { propertyCounts: htsPtCounts, filteredData: filteredHTSPTData } =
-        getPropertyCountsAndCoverageData(filteredClusterIdData, "HS6_PT");
+        getPropertyCountsAndCoverageData(data, "HS6_PT");
 
     // For HTS_ITK
     const { propertyCounts: htsItkCounts, filteredData: filteredHTSITKData } =
         getPropertyCountsAndCoverageData(filteredHTSPTData, "HS6_ITK");
 
-    const filteredHTSITKData_Null = [
-        ...filteredHTSITKData,
-        ...filteredNullData,
-    ];
-    const htsNonNullData = filteredHTSITKData_Null.filter(
-        (item) => item.HTS !== "null"
-    );
-
     // For HTS
     const { propertyCounts: htsCounts, filteredData: filteredHTSData } =
-        getPropertyCountsAndCoverageData(filteredHTSITKData_Null, "HTS");
-    const ptNonNullData = filteredHTSData.filter((item) => item.PT !== "null");
+        getPropertyCountsAndCoverageData(filteredHTSITKData, "HTS");
 
     // For PT
     const { propertyCounts: ptCounts, filteredData: filteredPTData } =
         getPropertyCountsAndCoverageData(filteredHTSData, "PT");
-    const itkNonNullData = filteredPTData.filter((item) => item.ITK !== "null");
 
     // For ITK
     const { propertyCounts: itkCounts, filteredData: filteredITKData } =
         getPropertyCountsAndCoverageData(filteredPTData, "ITK");
 
-    // Sort newData by clusterIdCounts[item.ClusterId] in descending order
-    const sortedNewData = newData.sort((a, b) => {
-        const countA = clusterIdCounts[a.HS6_PT_ITK] || 0;
-        const countB = clusterIdCounts[b.HS6_PT_ITK] || 0;
-        return countB - countA;
-    });
+    // For HTS_PT_ITK
+    const {
+        propertyCounts: htsPtItkCounts,
+        filteredData: filteredHTSPTITKData,
+    } = getPropertyCountsAndCoverageData(filteredITKData, "HS6_PT_ITK");
 
-    // Sort filteredClusterIdData by htsPtCounts[item.HS6_PT] in descending order
-    const sortedFilteredClusterIdData = filteredClusterIdData.sort((a, b) => {
+    // Sort newData by htsPtCounts[item.HS6_PT] in descending order
+    const sortedNewData = newData.sort((a, b) => {
         const countA = htsPtCounts[a.HS6_PT] || 0;
         const countB = htsPtCounts[b.HS6_PT] || 0;
         return countB - countA;
@@ -86,24 +55,31 @@ const CombinedPropTable = ({ data, header, rawData }) => {
         return countB - countA;
     });
 
-    // Sort filteredHTSITKData_Null by htsCounts[item.HTS] in descending order
-    const sortedHTSITKData = htsNonNullData.sort((a, b) => {
+    // Sort filteredHTSITKData by htsCounts[item.HTS] in descending order
+    const sortedHTSITKData = filteredHTSITKData.sort((a, b) => {
         const countA = htsCounts[a.HTS] || 0;
         const countB = htsCounts[b.HTS] || 0;
         return countB - countA;
     });
 
-    // Sort filteredHTSData by htsCounts[item.PT] in descending order
-    const sortedHTSData = ptNonNullData.sort((a, b) => {
+    // Sort filteredHTSData by ptCounts[item.PT] in descending order
+    const sortedHTSData = filteredHTSData.sort((a, b) => {
         const countA = ptCounts[a.PT] || 0;
         const countB = ptCounts[b.PT] || 0;
         return countB - countA;
     });
 
-    // Sort filteredPTData by ptCounts[item.ITK] in descending order
-    const sortedPTData = itkNonNullData.sort((a, b) => {
+    // Sort filteredPTData by itkCounts[item.ITK] in descending order
+    const sortedPTData = filteredPTData.sort((a, b) => {
         const countA = itkCounts[a.ITK] || 0;
         const countB = itkCounts[b.ITK] || 0;
+        return countB - countA;
+    });
+
+    // Sort filteredITKData by ptCounts[item.HS6_PT_ITK] in descending order
+    const sortedITKData = filteredITKData.sort((a, b) => {
+        const countA = htsPtItkCounts[a.HS6_PT_ITK] || 0;
+        const countB = htsPtItkCounts[b.HS6_PT_ITK] || 0;
         return countB - countA;
     });
 
@@ -125,6 +101,9 @@ const CombinedPropTable = ({ data, header, rawData }) => {
             ).toFixed(2);
             const rowData = {
                 ASIN: item.ASIN,
+                HTS: item.HTS,
+                PT: item.PT,
+                ITK: item.ITK,
                 [property]: item[property],
                 ClusterType: clusterType,
                 [`${property}Count`]: counts[item[property]],
@@ -137,17 +116,9 @@ const CombinedPropTable = ({ data, header, rawData }) => {
         return dataTemp.slice(0, topCountProperty);
     }
 
-    // For HS6_PT_ITK
-    const clusterIdData = processAndExtractDownloadData(
-        sortedNewData,
-        clusterIdCounts,
-        "HS6_PT_ITK",
-        "HS6_PT_ITK"
-    );
-
     // For HS6_PT
     const htsPtData = processAndExtractDownloadData(
-        sortedFilteredClusterIdData,
+        sortedNewData,
         htsPtCounts,
         "HS6_PT",
         "HS6_PT"
@@ -185,6 +156,14 @@ const CombinedPropTable = ({ data, header, rawData }) => {
         "ITK"
     );
 
+    // For HTS_PT_ITK
+    const htsPtItkData = processAndExtractDownloadData(
+        sortedITKData,
+        itkCounts,
+        "HS6_PT_ITK",
+        "HS6_PT_ITK"
+    );
+
     const restData = filteredITKData.map((item) => ({
         ASIN: item.ASIN,
         Cluster_Type: "N/A",
@@ -197,38 +176,26 @@ const CombinedPropTable = ({ data, header, rawData }) => {
         <>
             <Col md={6}>
                 <DownloadButton
-                    data1={clusterIdData.length > 0 ? clusterIdData : []}
-                    data2={htsPtData.length > 0 ? htsPtData : []}
-                    data3={htsItkData.length > 0 ? htsItkData : []}
-                    data4={htsData.length > 0 ? htsData : []}
-                    data5={ptData.length > 0 ? ptData : []}
-                    data6={itkData.length > 0 ? itkData : []}
+                    data1={htsPtData.length > 0 ? htsPtData : []}
+                    data2={htsItkData.length > 0 ? htsItkData : []}
+                    data3={htsData.length > 0 ? htsData : []}
+                    data4={ptData.length > 0 ? ptData : []}
+                    data5={itkData.length > 0 ? itkData : []}
+                    data6={htsPtItkData.length > 0 ? htsPtItkData : []}
                     data7={restData.length > 0 ? restData : []}
-                    data8={filteredNullData.length > 0 ? filteredNullData : []}
+                    data8={[]}
                 />
             </Col>
             <br />
             <Col>
-                {header === "HS6_PT_ITK" && (
+                {header === "HS6_PT" && (
                     <CoverageData
                         header={header}
                         totalItemCount={newData.length}
                         filteredData={newData}
                         uniqueItemsCountData={data}
-                        propertyName="HS6_PT_ITK"
-                        sortedData={sortedNewData}
-                        counts={clusterIdCounts}
-                    />
-                )}
-
-                {header === "HS6_PT" && (
-                    <CoverageData
-                        header={header}
-                        totalItemCount={filteredClusterIdData.length}
-                        filteredData={filteredClusterIdData}
-                        uniqueItemsCountData={filteredClusterIdData}
                         propertyName="HS6_PT"
-                        sortedData={sortedFilteredClusterIdData}
+                        sortedData={sortedNewData}
                         counts={htsPtCounts}
                     />
                 )}
@@ -248,9 +215,9 @@ const CombinedPropTable = ({ data, header, rawData }) => {
                 {header === "HS6" && (
                     <CoverageData
                         header={header}
-                        totalItemCount={filteredHTSITKData_Null.length}
-                        filteredData={htsNonNullData}
-                        uniqueItemsCountData={htsNonNullData}
+                        totalItemCount={filteredHTSITKData.length}
+                        filteredData={filteredHTSITKData}
+                        uniqueItemsCountData={filteredHTSITKData}
                         propertyName="HTS"
                         sortedData={sortedHTSITKData}
                         counts={htsCounts}
@@ -261,8 +228,8 @@ const CombinedPropTable = ({ data, header, rawData }) => {
                     <CoverageData
                         header={header}
                         totalItemCount={filteredHTSData.length}
-                        filteredData={ptNonNullData}
-                        uniqueItemsCountData={ptNonNullData}
+                        filteredData={filteredHTSData}
+                        uniqueItemsCountData={filteredHTSData}
                         propertyName="PT"
                         sortedData={sortedHTSData}
                         counts={ptCounts}
@@ -273,11 +240,23 @@ const CombinedPropTable = ({ data, header, rawData }) => {
                     <CoverageData
                         header={header}
                         totalItemCount={filteredPTData.length}
-                        filteredData={itkNonNullData}
-                        uniqueItemsCountData={itkNonNullData}
+                        filteredData={filteredPTData}
+                        uniqueItemsCountData={filteredPTData}
                         propertyName="ITK"
                         sortedData={sortedPTData}
                         counts={itkCounts}
+                    />
+                )}
+
+                {header === "HS6_PT_ITK" && (
+                    <CoverageData
+                        header={header}
+                        totalItemCount={filteredITKData.length}
+                        filteredData={filteredITKData}
+                        uniqueItemsCountData={filteredITKData}
+                        propertyName="HS6_PT_ITK"
+                        sortedData={sortedITKData}
+                        counts={htsPtItkCounts}
                     />
                 )}
             </Col>
